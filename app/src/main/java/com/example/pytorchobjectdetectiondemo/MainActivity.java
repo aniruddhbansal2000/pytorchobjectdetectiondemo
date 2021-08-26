@@ -147,13 +147,11 @@ public class MainActivity extends AppCompatActivity {
         String filePath = baseDir + File.separator + fileName;
 
         FileWriter mFileWriter;
-        CSVWriter writer = null;
+        CSVWriter writer;
         File f = new File(filePath);
 
         // have mFileWriter
-        boolean foundFile = false;
-        if(f.exists() && !f.isDirectory())
-        {
+        if(f.exists() && !f.isDirectory()) {
             Log.d("filePointer", "file exists");
             try {
                 mFileWriter = new FileWriter(filePath, true);
@@ -161,37 +159,17 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("filePointer", "created write pointer");
                 writer.writeNext(new String[]{"category", "confidence_score"});
                 Log.d("insideTag", "added record successfully");
-                foundFile = true;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
 
-        // no mFileWriter
-        if(!foundFile)
-        {
-            try {
                 writer = new CSVWriter(new FileWriter(filePath));
                 writer.writeNext(new String[]{"category", "confidence_score"});
+
+                String[] data = new String[0];
+                writer.writeNext(new String[]{"sample_category", "sample_score"});
+                writer.writeNext(data);
+                writer.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-
-        // append data to file
-        String[] data = new String[0];
-        try {
-//            Log.d("valueTag", String.valueOf(jsonObject.get("category")) + "  " + String.valueOf(jsonObject.get("confidence_score")));
-//            data = new String[]{ String.valueOf(jsonObject.get("category")),  String.valueOf(jsonObject.get("confidence_score"))};
-            writer.writeNext(new String[]{"sample_category", "sample_score"});
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            writer.writeNext(data);
-            writer.close();
-        } catch (IOException ignored) {
         }
     }
 
