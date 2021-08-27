@@ -7,7 +7,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -18,8 +17,6 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.opencsv.CSVWriter;
-
 import org.pytorch.IValue;
 import org.pytorch.LiteModuleLoader;
 import org.pytorch.Module;
@@ -27,11 +24,12 @@ import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
     private static int RESULT_LOAD_IMAGE = 1;
@@ -45,11 +43,8 @@ public class MainActivity extends AppCompatActivity {
         Button buttonLoadImage = (Button) findViewById(R.id.button);
         Button detectButton = (Button) findViewById(R.id.detect);
 
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
-            requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-        }
+        requestPermissions(new String[]{android.Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+        requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
 
         buttonLoadImage.setOnClickListener(arg0 -> {
             TextView textView = findViewById(R.id.result_text);
@@ -141,37 +136,46 @@ public class MainActivity extends AppCompatActivity {
 
     private void addResponseToFile(){
         // WIRINT TO .CSV FILE
-        String baseDir = Environment.getExternalStorageDirectory().getAbsolutePath() + "/sample";
 
-        String fileName = "response.csv";
-        String filePath = baseDir + File.separator + fileName;
+        //Squash all your data here at once or you can format it accordingly.
+        String csv_data = Arrays.toString(new String[]{"sample_category", "sample_score"});/// your csv data as string;
 
-        FileWriter mFileWriter;
-        CSVWriter writer;
-        File f = new File(filePath);
+        File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
 
-        // have mFileWriter
-        if(f.exists() && !f.isDirectory()) {
-            Log.d("filePointer", "file exists");
+        //Sub Folder
+        root = new File(root, "My Results");
+        root.mkdir();
+
+        //Select the name for your file
+        root = new File(root , "response.csv");
+
+        try {
+            FileOutputStream fout = new FileOutputStream(root);
+            fout.write(csv_data.getBytes());
+
+            fout.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+
+            boolean bool = false;
             try {
-                mFileWriter = new FileWriter(filePath, true);
-                writer = new CSVWriter(mFileWriter);
-                Log.d("filePointer", "created write pointer");
-                writer.writeNext(new String[]{"category", "confidence_score"});
-                Log.d("insideTag", "added record successfully");
-
-                writer = new CSVWriter(new FileWriter(filePath));
-                writer.writeNext(new String[]{"category", "confidence_score"});
-
-                String[] data = new String[0];
-                writer.writeNext(new String[]{"sample_category", "sample_score"});
-                writer.writeNext(data);
-                writer.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+                // try to create the file
+                bool = root.createNewFile();
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
+
+            if (bool){
+                // call the method again
+                addResponseToFile();
+            }else {
+                throw new IllegalStateException("Failed to create file");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
